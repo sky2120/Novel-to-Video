@@ -8,16 +8,19 @@
 
 ## 功能特性
 
-- 文本分段：将小说章节拆分为多个段落
-- 图像生成：为每个段落生成稳定的漫画风格图像
-- 视频转换：将图像序列转换为连贯的短视频
-- 视频拼接：将多个短视频拼接成完整的视频作品
+- **小说管理**：自动导入小说文件到数据库
+- **分镜生成**：调用AI API为小说生成漫画分镜Prompt模板
+- **角色锁定**：提取并锁定角色特征，确保图像一致性
+- **数据库存储**：使用MySQL存储小说内容和分镜信息
+- **自动化处理**：支持批量处理和增量更新
 
 ## 技术栈
 
 - Python
-- AI图像生成API
-- 视频处理库
+- MySQL数据库
+- Moonshot AI API (kimi-k2.5模型)
+- pymysql (数据库连接)
+- requests (HTTP请求)
 
 ## 安装和使用
 
@@ -27,34 +30,63 @@
 pip install -r requirements.txt
 ```
 
+### 配置
+
+1. **API密钥配置**：
+   - 创建 `kimi api_key.txt` 文件，写入您的Moonshot API密钥
+
+2. **数据库配置**：
+   - 数据库连接信息已在程序中配置
+   - 主机：47.112.223.166
+   - 端口：3306
+   - 用户名：novel
+   - 密码：novel_sky
+   - 数据库：novel
+
 ### 使用示例
 
-```python
-from novel_to_video import convert_novel_to_video
+#### 1. 导入小说到数据库
 
-# 将小说转换为视频
-convert_novel_to_video(
-    novel_path="path/to/novel.txt",
-    output_path="output/video.mp4",
-    num_segments=10  # 将小说拆分为10段
-)
+```bash
+# 导入所有小说
+python import_novel_to_db.py
+
+# 更新小说标题
+python import_novel_to_db.py --update-title "旧小说名" "新小说名"
+```
+
+#### 2. 生成分镜Prompt
+
+```bash
+# 生成分镜和角色锁定参数
+python novel_to_storyboard.py
 ```
 
 ## 项目结构
 
 ```
 Novel-to-Video/
-├── README.md
-├── requirements.txt
-├── src/
-│   ├── __init__.py
-│   ├── text_splitter.py    # 文本分段模块
-│   ├── image_generator.py  # 图像生成模块
-│   ├── video_creator.py    # 视频创建模块
-│   └── video_concatenator.py  # 视频拼接模块
-└── examples/
-    └── example.py          # 使用示例
+├── README.md              # 项目说明文档
+├── requirements.txt       # Python依赖包
+├── novel_to_storyboard.py # 小说转分镜程序
+├── import_novel_to_db.py  # 小说导入数据库程序
+└── .gitignore            # Git忽略配置
 ```
+
+## 数据库表结构
+
+- **novels**: 小说基本信息表
+- **chapters**: 小说章节表
+- **characters**: 角色锁定参数表
+- **storyboards**: 分镜表
+- **generated_images**: 生成图像表
+- **videos**: 视频表
+
+## 注意事项
+
+1. 小说文件需放在 `novel/小说名/章节名.txt` 格式
+2. API密钥文件 `kimi api_key.txt` 不会被提交到Git
+3. 数据库表已自动创建，无需手动创建
 
 ## 贡献指南
 
