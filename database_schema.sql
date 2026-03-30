@@ -6,6 +6,7 @@ DROP TABLE IF EXISTS videos;
 DROP TABLE IF EXISTS generated_images;
 DROP TABLE IF EXISTS storyboards;
 DROP TABLE IF EXISTS characters;
+DROP TABLE IF EXISTS items;
 DROP TABLE IF EXISTS chapters;
 DROP TABLE IF EXISTS novels;
 
@@ -59,6 +60,28 @@ CREATE TABLE characters (
     INDEX idx_novel_id (novel_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='角色表';
 
+-- 物品表
+CREATE TABLE items (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    novel_id INT NOT NULL COMMENT '小说ID',
+    name VARCHAR(100) NOT NULL COMMENT '物品名称',
+    description TEXT COMMENT '物品详细描述',
+    item_type VARCHAR(50) COMMENT '物品类型（武器/道具/法器/药品/食物/交通工具等）',
+    item_function TEXT COMMENT '物品功能和作用',
+    rarity VARCHAR(20) COMMENT '稀有度（普通/稀有/史诗/传说等）',
+    appearance VARCHAR(200) COMMENT '物品外观描述',
+    origin VARCHAR(100) COMMENT '物品来源',
+    owner VARCHAR(100) COMMENT '物品持有者',
+    importance INT COMMENT '重要性等级（1-10）',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    FOREIGN KEY (novel_id) REFERENCES novels(id) ON DELETE CASCADE,
+    UNIQUE KEY idx_novel_item (novel_id, name),
+    INDEX idx_novel_id (novel_id),
+    INDEX idx_item_type (item_type),
+    INDEX idx_importance (importance)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='物品表';
+
 -- 索引优化
 CREATE INDEX idx_novels_status ON novels(status);
 CREATE INDEX idx_novels_genre ON novels(genre);
@@ -69,3 +92,4 @@ CREATE INDEX idx_novels_video_status ON novels(video_status);
 -- 注释说明
 -- 1. novels表：存储小说的基本信息，包括标题、作者、状态等
 -- 2. characters表：存储角色信息，关联到novels表，包含角色的详细特征描述
+-- 3. items表：存储小说中的物品信息，关联到novels表，包含物品的详细描述和属性
