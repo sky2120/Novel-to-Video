@@ -10,8 +10,23 @@ CREATE TABLE IF NOT EXISTS novels (
     cover_url VARCHAR(500) COMMENT '封面图片URL',
     status ENUM('ongoing', 'completed', 'paused') DEFAULT 'ongoing' COMMENT '状态',
     total_chapters INT DEFAULT 0 COMMENT '总章节数',
+    progress_chapters INT DEFAULT 0 COMMENT '进度章节数（已处理的章节数）',
+    visual_style VARCHAR(100) COMMENT '视觉风格（漫画风、写实风、水彩风等）',
+    art_style VARCHAR(100) COMMENT '艺术风格（日式、美式、中式等）',
+    background_setting VARCHAR(200) COMMENT '背景设置（现代都市、古代仙侠、未来科幻等）',
+    style_prompt TEXT COMMENT '风格提示词（用于AI生成的详细风格描述）',
+    genre VARCHAR(100) COMMENT '小说类型（玄幻、仙侠、都市、科幻等）',
+    language VARCHAR(50) DEFAULT '中文' COMMENT '语言类型（中文、英文等）',
+    word_count INT DEFAULT 0 COMMENT '总字数',
+    publish_date DATE COMMENT '发布日期',
+    source_url VARCHAR(500) COMMENT '来源链接',
+    import_status ENUM('pending', 'imported', 'failed') DEFAULT 'pending' COMMENT '导入状态',
+    analysis_status ENUM('pending', 'analyzed', 'failed') DEFAULT 'pending' COMMENT '分析状态',
+    storyboard_status ENUM('pending', 'generating', 'completed', 'failed') DEFAULT 'pending' COMMENT '分镜生成状态',
+    video_status ENUM('pending', 'processing', 'completed', 'failed') DEFAULT 'pending' COMMENT '视频生成状态',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    last_processed_at TIMESTAMP NULL COMMENT '最后处理时间',
     INDEX idx_title (title)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='小说基本信息表';
 
@@ -95,6 +110,11 @@ CREATE TABLE IF NOT EXISTS videos (
 
 -- 索引优化
 CREATE INDEX idx_novels_status ON novels(status);
+CREATE INDEX idx_novels_genre ON novels(genre);
+CREATE INDEX idx_novels_import_status ON novels(import_status);
+CREATE INDEX idx_novels_analysis_status ON novels(analysis_status);
+CREATE INDEX idx_novels_storyboard_status ON novels(storyboard_status);
+CREATE INDEX idx_novels_video_status ON novels(video_status);
 CREATE INDEX idx_chapters_chapter_number ON chapters(chapter_number);
 CREATE INDEX idx_characters_name ON characters(name);
 CREATE INDEX idx_generated_images_width_height ON generated_images(width, height);

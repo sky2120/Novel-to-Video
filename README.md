@@ -54,7 +54,14 @@ python import_novel_to_db.py
 python import_novel_to_db.py --update-title "旧小说名" "新小说名"
 ```
 
-#### 2. 生成分镜Prompt
+#### 2. 分析小说风格和背景
+
+```bash
+# 分析所有小说的风格、背景、主角和视觉风格
+python analyze_novel_style.py
+```
+
+#### 3. 生成分镜Prompt
 
 ```bash
 # 生成分镜和角色锁定参数
