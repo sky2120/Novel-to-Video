@@ -2,9 +2,12 @@ import os
 import json
 import pymysql
 
-# 配置文件路径（相对于py目录）
-CONFIG_FILE = '../db_config.json'
-NOVEL_DIR = '../novel'
+# 获取项目根目录
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# 配置文件路径
+CONFIG_FILE = os.path.join(BASE_DIR, 'db_config.json')
+NOVEL_DIR = os.path.join(BASE_DIR, 'novel')
 
 def load_config():
     """加载数据库配置"""
@@ -72,6 +75,9 @@ def import_novels_to_db(conn, novel_folders):
 def main():
     """主函数"""
     print("开始导入小说到数据库...")
+    print(f"项目根目录: {BASE_DIR}")
+    print(f"配置文件路径: {CONFIG_FILE}")
+    print(f"小说目录路径: {NOVEL_DIR}")
     
     # 检查配置文件
     if not os.path.exists(CONFIG_FILE):
@@ -81,6 +87,7 @@ def main():
     
     # 加载配置
     config = load_config()
+    print(f"数据库配置: {config}")
     
     # 获取小说文件夹
     novel_folders = get_novel_folders(NOVEL_DIR)
