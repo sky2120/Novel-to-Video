@@ -69,6 +69,7 @@ Novel-to-Video/
 ├── requirements.txt       # Python依赖包
 ├── novel_to_storyboard.py # 小说转分镜程序
 ├── import_novel_to_db.py  # 小说导入数据库程序
+├── analyze_novel_style.py # 小说风格分析程序
 ├── database_schema.sql    # 数据库结构SQL文件
 ├── .gitignore            # Git忽略配置
 ├── db_config.example.json # 数据库配置示例文件
