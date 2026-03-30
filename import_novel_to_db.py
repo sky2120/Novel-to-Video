@@ -5,15 +5,33 @@ from pathlib import Path
 
 class NovelImporter:
     def __init__(self):
-        self.db_config = {
-            'host': '47.112.223.166',
+        # 从配置文件读取数据库连接信息
+        self.db_config = self._load_db_config()
+        self.novel_base_path = r'd:\桌面\临时文件\A自动生成类型文件\AI漫剧\novel'
+    
+    def _load_db_config(self):
+        """从配置文件加载数据库连接信息"""
+        config_file = 'db_config.json'
+        default_config = {
+            'host': 'localhost',
             'port': 3306,
-            'user': 'novel',
-            'password': 'novel_sky',
-            'database': 'novel',
+            'user': 'username',
+            'password': 'password',
+            'database': 'database',
             'charset': 'utf8mb4'
         }
-        self.novel_base_path = r'd:\桌面\临时文件\A自动生成类型文件\AI漫剧\novel'
+        
+        try:
+            with open(config_file, 'r', encoding='utf-8') as f:
+                config = json.load(f)
+            print(f"已从 {config_file} 加载数据库配置")
+            return config
+        except FileNotFoundError:
+            print(f"警告：未找到 {config_file} 文件，使用默认配置")
+            return default_config
+        except Exception as e:
+            print(f"加载配置文件失败: {e}，使用默认配置")
+            return default_config
     
     def get_db_connection(self):
         """获取数据库连接"""

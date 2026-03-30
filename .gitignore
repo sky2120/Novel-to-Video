@@ -18,6 +18,9 @@ __pycache__/
 .env.local
 .env.*.local
 
+# 忽略数据库配置文件
+db_config.json
+
 # 忽略日志文件
 *.log
 logs/
