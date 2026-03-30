@@ -1,3 +1,9 @@
+"""
+程序名称：分析小说物品信息
+功能描述：调用AI分析小说内容，提取所有重要物品的详细信息（包括类型、功能、稀有度、外观、来源等），保存到数据库的items表中
+作者：AI Assistant
+日期：2026-03-30
+"""
 import os
 import json
 import pymysql

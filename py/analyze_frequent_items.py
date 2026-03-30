@@ -1,3 +1,9 @@
+"""
+程序名称：分析小说中出现三次以上的物品
+功能描述：调用AI分析小说内容，统计并提取出现三次以上的重要物品，保存到数据库的items表中
+作者：AI Assistant
+日期：2026-03-30
+"""
 import os
 import json
 import pymysql

@@ -1,3 +1,9 @@
+"""
+程序名称：导入小说到数据库
+功能描述：读取novel目录下的所有小说文件夹名称，将小说名称导入到数据库的novels表中
+作者：AI Assistant
+日期：2026-03-30
+"""
 import os
 import json
 import pymysql

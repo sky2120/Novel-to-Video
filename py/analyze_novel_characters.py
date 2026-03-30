@@ -1,3 +1,9 @@
+"""
+程序名称：分析小说角色信息
+功能描述：调用AI分析小说内容，提取所有主要角色的详细信息（包括身份、外貌、体型、气质、服装等），保存到数据库的characters表中
+作者：AI Assistant
+日期：2026-03-30
+"""
 import os
 import json
 import pymysql
