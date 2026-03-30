@@ -36,12 +36,9 @@ pip install -r requirements.txt
    - 创建 `kimi api_key.txt` 文件，写入您的Moonshot API密钥
 
 2. **数据库配置**：
-   - 数据库连接信息已在程序中配置
-   - 主机：47.112.223.166
-   - 端口：3306
-   - 用户名：novel
-   - 密码：novel_sky
-   - 数据库：novel
+   - 复制 `db_config.example.json` 为 `db_config.json`
+   - 在 `db_config.json` 文件中配置您的数据库连接信息
+   - 配置文件不会被提交到Git
 
 ### 使用示例
 
