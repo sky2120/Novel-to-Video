@@ -2,9 +2,9 @@ import os
 import json
 import pymysql
 
-# 配置文件路径（相对于项目根目录）
-CONFIG_FILE = '../db_config.json'
-NOVEL_DIR = '../novel'
+# 配置文件路径（相对于当前工作目录）
+CONFIG_FILE = 'db_config.json'
+NOVEL_DIR = 'novel'
 
 def load_config():
     """加载数据库配置"""
