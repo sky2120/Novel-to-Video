@@ -33,12 +33,12 @@ pip install -r requirements.txt
 ### 配置
 
 1. **API密钥配置**：
-   - 复制 `kimi api_key.example.txt` 为 `kimi api_key.txt`
+   - 删除 `kimi api_key.example.txt` 中的 ".example" 后缀，重命名为 `kimi api_key.txt`
    - 在 `kimi api_key.txt` 文件中写入您的Moonshot API密钥
    - 密钥文件不会被提交到Git
 
 2. **数据库配置**：
-   - 复制 `db_config.example.json` 为 `db_config.json`
+   - 删除 `db_config.example.json` 中的 ".example" 后缀，重命名为 `db_config.json`
    - 在 `db_config.json` 文件中配置您的数据库连接信息
    - 配置文件不会被提交到Git
 
