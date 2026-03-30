@@ -1,0 +1,36 @@
+# 忽略小说文件夹
+novel/
+
+# 忽略API密钥文件
+kimi api_key.txt
+
+# 忽略生成的结果文件
+storyboard_result.json
+
+# 忽略Python编译文件
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# 忽略环境变量文件
+.env
+.env.local
+.env.*.local
+
+# 忽略日志文件
+*.log
+logs/
+
+# 忽略临时文件
+*.tmp
+*.temp
+tmp/
+temp/
+
+# 忽略编辑器文件
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
