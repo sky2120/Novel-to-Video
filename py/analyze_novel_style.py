@@ -59,7 +59,7 @@ def call_ai_api(api_key, content):
 - style_prompt: 风格提示词
 
 小说内容：
-{content[:3000]}"""  # 限制内容长度，避免超出API限制
+{content[:2000]}"""  # 限制内容长度，避免超出API限制
     
     headers = {
         "Content-Type": "application/json",
@@ -67,7 +67,7 @@ def call_ai_api(api_key, content):
     }
     
     data = {
-        "model": "kimi-k2.5",
+        "model": "moonshot-v1-8k",
         "messages": [
             {
                 "role": "user",
@@ -79,7 +79,10 @@ def call_ai_api(api_key, content):
     
     try:
         response = requests.post(url, headers=headers, json=data)
-        response.raise_for_status()
+        print(f"API响应状态码: {response.status_code}")
+        if response.status_code != 200:
+            print(f"API响应内容: {response.text}")
+            return None
         result = response.json()
         return result['choices'][0]['message']['content']
     except Exception as e:
