@@ -69,8 +69,34 @@ Novel-to-Video/
 ├── requirements.txt       # Python依赖包
 ├── novel_to_storyboard.py # 小说转分镜程序
 ├── import_novel_to_db.py  # 小说导入数据库程序
-└── .gitignore            # Git忽略配置
+├── .gitignore            # Git忽略配置
+├── db_config.example.json # 数据库配置示例文件
+├── kimi api_key.example.txt # API密钥示例文件
+└── novel/                # 小说存放目录
+    └── .gitkeep          # 保持文件夹结构
 ```
+
+## 小说目录结构
+
+`novel/` 目录用于存放小说文件，结构如下：
+
+```
+novel/
+├── 小说名1/
+│   ├── 第一章.txt
+│   ├── 第二章.txt
+│   └── ...
+├── 小说名2/
+│   ├── 第一章.txt
+│   ├── 第二章.txt
+│   └── ...
+└── .gitkeep  # 保持文件夹结构的空文件
+```
+
+**说明：**
+- 每个小说文件夹以小说名称命名
+- 每个章节文件以章节名称命名（如"第一章.txt"、"第二章.txt"）
+- 小说内容不会被提交到Git仓库，只保留目录结构
 
 ## 数据库表结构
 
