@@ -65,7 +65,6 @@ def call_moonshot_api(novel_content, api_key):
                 "content": user_prompt
             }
         ],
-        "temperature": 0.7,
         "max_tokens": 2000
     }
     
@@ -79,6 +78,9 @@ def call_moonshot_api(novel_content, api_key):
             },
             data=json.dumps(payload)
         )
+        
+        print(f"API响应状态码: {response.status_code}")
+        print(f"API响应内容: {response.text}")
         
         response.raise_for_status()
         return response.json()
@@ -99,11 +101,18 @@ def main():
     # 配置
     novel_file = "d:\\桌面\\临时文件\\A自动生成类型文件\\AI漫剧\\novel\\第一章.txt"
     output_file = "d:\\桌面\\临时文件\\A自动生成类型文件\\AI漫剧\\storyboard_result.json"
+    api_key_file = "d:\\桌面\\临时文件\\A自动生成类型文件\\AI漫剧\\kimi api_key.txt"
     
-    # 获取API密钥（从环境变量或用户输入）
+    # 获取API密钥（从文件读取）
     api_key = os.environ.get("MOONSHOT_API_KEY")
     if not api_key:
-        api_key = input("请输入Moonshot API密钥: ")
+        try:
+            with open(api_key_file, 'r', encoding='utf-8') as f:
+                api_key = f.read().strip()
+            print("已从文件读取API密钥")
+        except Exception as e:
+            print(f"读取API密钥文件失败: {e}")
+            api_key = input("请输入Moonshot API密钥: ")
     
     # 读取小说内容
     novel_content = read_novel(novel_file)
