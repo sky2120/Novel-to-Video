@@ -14,6 +14,7 @@ CREATE TABLE novels (
     id INT AUTO_INCREMENT PRIMARY KEY,
     title VARCHAR(255) NOT NULL COMMENT '小说标题',
     author VARCHAR(100) COMMENT '作者名称',
+    protagonist VARCHAR(100) COMMENT '主角名称',
     status ENUM('ongoing', 'completed', 'paused') DEFAULT 'ongoing' COMMENT '小说状态（ongoing进行中、completed已完成、paused暂停）',
     visual_style VARCHAR(100) COMMENT '视觉风格（漫画风、写实风、水彩风等）',
     art_style VARCHAR(100) COMMENT '艺术风格（日式、美式、中式等）',
