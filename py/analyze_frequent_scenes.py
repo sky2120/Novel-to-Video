@@ -190,6 +190,22 @@ def save_scenes_to_db(conn, novel_id, scenes):
     
     try:
         for scene in scenes:
+            # 确保所有字段都是字符串或数字类型
+            name = scene.get('name') or ''
+            description = scene.get('description') or ''
+            scene_type = scene.get('scene_type') or ''
+            
+            # 处理visual_details字段，如果是字典则转换为JSON字符串
+            visual_details = scene.get('visual_details')
+            if isinstance(visual_details, dict):
+                visual_details = json.dumps(visual_details, ensure_ascii=False)
+            else:
+                visual_details = visual_details or ''
+                
+            atmosphere = scene.get('atmosphere') or ''
+            time_period = scene.get('time_period') or ''
+            weather = scene.get('weather') or ''
+            
             # 处理数字字段，确保是整数
             appearance_count = scene.get('appearance_count')
             if appearance_count is not None:
@@ -204,6 +220,8 @@ def save_scenes_to_db(conn, novel_id, scenes):
                     importance = int(importance)
                 except (ValueError, TypeError):
                     importance = None
+            
+
             
             cursor.execute("""
                 INSERT INTO scenes (
@@ -222,14 +240,14 @@ def save_scenes_to_db(conn, novel_id, scenes):
                     updated_at = CURRENT_TIMESTAMP
             """, (
                 novel_id,
-                scene.get('name'),
-                scene.get('description'),
-                scene.get('scene_type'),
+                name,
+                description,
+                scene_type,
                 appearance_count,
-                scene.get('visual_details'),
-                scene.get('atmosphere'),
-                scene.get('time_period'),
-                scene.get('weather'),
+                visual_details,
+                atmosphere,
+                time_period,
+                weather,
                 importance
             ))
         
