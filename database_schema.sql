@@ -7,6 +7,7 @@ DROP TABLE IF EXISTS generated_images;
 DROP TABLE IF EXISTS storyboards;
 DROP TABLE IF EXISTS characters;
 DROP TABLE IF EXISTS items;
+DROP TABLE IF EXISTS scenes;
 DROP TABLE IF EXISTS chapters;
 DROP TABLE IF EXISTS novels;
 
@@ -84,6 +85,29 @@ CREATE TABLE items (
     INDEX idx_importance (importance)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='物品表';
 
+-- 场景表
+CREATE TABLE scenes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    novel_id INT NOT NULL COMMENT '小说ID',
+    name VARCHAR(200) NOT NULL COMMENT '场景名称',
+    description TEXT COMMENT '场景详细描述',
+    scene_type VARCHAR(50) COMMENT '场景类型（室内/室外/公共场所/私人场所等）',
+    appearance_count INT COMMENT '出现次数',
+    visual_details TEXT COMMENT '视觉细节描述',
+    atmosphere VARCHAR(100) COMMENT '氛围描述',
+    time_period VARCHAR(50) COMMENT '时间段（早晨/中午/晚上/黄昏等）',
+    weather VARCHAR(50) COMMENT '天气情况',
+    importance INT COMMENT '重要性等级（1-10）',
+    is_generated BOOLEAN DEFAULT FALSE COMMENT '是否已生成图像',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    FOREIGN KEY (novel_id) REFERENCES novels(id) ON DELETE CASCADE,
+    UNIQUE KEY idx_novel_scene (novel_id, name),
+    INDEX idx_novel_id (novel_id),
+    INDEX idx_scene_type (scene_type),
+    INDEX idx_importance (importance)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='场景表';
+
 -- 索引优化
 CREATE INDEX idx_novels_status ON novels(status);
 CREATE INDEX idx_novels_genre ON novels(genre);
@@ -95,3 +119,4 @@ CREATE INDEX idx_novels_video_status ON novels(video_status);
 -- 1. novels表：存储小说的基本信息，包括标题、作者、状态等
 -- 2. characters表：存储角色信息，关联到novels表，包含角色的详细特征描述
 -- 3. items表：存储小说中的物品信息，关联到novels表，包含物品的详细描述和属性
+-- 4. scenes表：存储小说中的场景信息，关联到novels表，包含场景的详细描述和视觉特征
