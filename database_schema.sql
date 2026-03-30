@@ -30,6 +30,35 @@ CREATE TABLE novels (
     INDEX idx_title (title)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='小说基本信息表';
 
+-- 角色表
+CREATE TABLE characters (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    novel_id INT NOT NULL COMMENT '小说ID',
+    name VARCHAR(100) NOT NULL COMMENT '姓名',
+    age INT COMMENT '年龄',
+    gender VARCHAR(20) COMMENT '性别',
+    personality VARCHAR(50) COMMENT '性格（高冷 / 温柔 / 腹黑 / 阳光 / 病娇等）',
+    identity VARCHAR(50) COMMENT '身份（学生 / 总裁 / 修仙者 / 刺客 / 反派等）',
+    hairstyle VARCHAR(100) COMMENT '发型：长度、颜色、样式（直发 / 卷发 / 高马尾 / 齐刘海）',
+    face_shape VARCHAR(50) COMMENT '脸型：瓜子脸 / 圆脸 / 方脸 / 少年感窄脸',
+    eyes VARCHAR(100) COMMENT '眼睛：颜色、形状（杏眼 / 桃花眼 / 丹凤眼）',
+    eyebrows VARCHAR(50) COMMENT '眉毛：平眉 / 剑眉 / 细眉',
+    nose_mouth VARCHAR(50) COMMENT '鼻子/嘴巴：精致/薄唇等',
+    skin_color VARCHAR(20) COMMENT '肤色：冷白 / 正常 / 小麦色',
+    height_atmosphere VARCHAR(50) COMMENT '身高氛围（高挑 / 娇小 / 少年感 / 强壮）',
+    body_type VARCHAR(20) COMMENT '体型（纤细 / 匀称 / 肌肉）',
+    temperament VARCHAR(50) COMMENT '气质（清冷 / 魅惑 / 阳光 / 阴郁 / 霸气）',
+    clothing_style VARCHAR(50) COMMENT '主服装风格（校服 / 西装 / 古风 / 现代休闲 / 赛博）',
+    color_scheme VARCHAR(50) COMMENT '固定配色（黑 + 白、蓝 + 灰、红 + 黑）',
+    signature_decoration VARCHAR(100) COMMENT '标志性装饰（眼镜 / 发带 / 项链 / 耳钉 / 披风 / 手套）',
+    art_style VARCHAR(50) COMMENT '漫画风格',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    FOREIGN KEY (novel_id) REFERENCES novels(id) ON DELETE CASCADE,
+    UNIQUE KEY idx_novel_character (novel_id, name),
+    INDEX idx_novel_id (novel_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='角色表';
+
 -- 索引优化
 CREATE INDEX idx_novels_status ON novels(status);
 CREATE INDEX idx_novels_genre ON novels(genre);
@@ -39,3 +68,4 @@ CREATE INDEX idx_novels_video_status ON novels(video_status);
 
 -- 注释说明
 -- 1. novels表：存储小说的基本信息，包括标题、作者、状态等
+-- 2. characters表：存储角色信息，关联到novels表，包含角色的详细特征描述
