@@ -152,6 +152,14 @@ def save_characters_to_db(conn, novel_id, characters):
     
     try:
         for character in characters:
+            # 处理年龄字段，确保是整数
+            age = character.get('age')
+            if age is not None:
+                try:
+                    age = int(age)
+                except (ValueError, TypeError):
+                    age = None
+            
             cursor.execute("""
                 INSERT INTO characters (
                     novel_id, name, age, gender, personality, identity,
@@ -181,7 +189,7 @@ def save_characters_to_db(conn, novel_id, characters):
             """, (
                 novel_id,
                 character.get('name'),
-                character.get('age'),
+                age,
                 character.get('gender'),
                 character.get('personality'),
                 character.get('identity'),
