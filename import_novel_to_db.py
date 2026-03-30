@@ -51,18 +51,24 @@ class NovelImporter:
                     novel_title = novel_folder.name
                     print(f"正在处理小说: {novel_title}")
                     
-                    # 插入小说信息
-                    novel_sql = """
-                    INSERT INTO novels (title, status) 
-                    VALUES (%s, 'ongoing') 
-                    ON DUPLICATE KEY UPDATE updated_at = CURRENT_TIMESTAMP
-                    """
-                    cursor.execute(novel_sql, (novel_title,))
-                    conn.commit()
-                    
-                    # 获取小说ID
+                    # 检查是否存在同名小说
                     cursor.execute("SELECT id FROM novels WHERE title = %s", (novel_title,))
-                    novel_id = cursor.fetchone()[0]
+                    existing_novel = cursor.fetchone()
+                    
+                    if existing_novel:
+                        novel_id = existing_novel[0]
+                        print(f"  小说已存在，ID: {novel_id}")
+                    else:
+                        # 检查是否有其他标题但文件夹路径匹配的记录
+                        # 这里简化处理，直接创建新记录
+                        novel_sql = """
+                        INSERT INTO novels (title, status) 
+                        VALUES (%s, 'ongoing')
+                        """
+                        cursor.execute(novel_sql, (novel_title,))
+                        conn.commit()
+                        novel_id = cursor.lastrowid
+                        print(f"  创建新小说记录，ID: {novel_id}")
                     
                     # 遍历章节文件
                     chapters = []
@@ -120,6 +126,31 @@ class NovelImporter:
         finally:
             conn.close()
     
+    def update_novel_title(self, old_title, new_title):
+        """更新小说标题"""
+        conn = self.get_db_connection()
+        if not conn:
+            return
+        
+        try:
+            cursor = conn.cursor()
+            
+            # 更新小说标题
+            update_sql = "UPDATE novels SET title = %s WHERE title = %s"
+            cursor.execute(update_sql, (new_title, old_title))
+            
+            if cursor.rowcount > 0:
+                print(f"成功将小说 '{old_title}' 重命名为 '{new_title}'")
+            else:
+                print(f"未找到小说 '{old_title}'")
+            
+            conn.commit()
+        except Exception as e:
+            print(f"更新小说标题失败: {e}")
+            conn.rollback()
+        finally:
+            conn.close()
+    
     def run(self):
         """运行导入程序"""
         print("开始导入小说到数据库...")
@@ -127,5 +158,18 @@ class NovelImporter:
         print("导入完成！")
 
 if __name__ == "__main__":
+    import argparse
+    
+    parser = argparse.ArgumentParser(description='导入小说到数据库或更新小说标题')
+    parser.add_argument('--update-title', nargs=2, metavar=('OLD_TITLE', 'NEW_TITLE'),
+                       help='更新小说标题')
+    
+    args = parser.parse_args()
+    
     importer = NovelImporter()
-    importer.run()
+    
+    if args.update_title:
+        old_title, new_title = args.update_title
+        importer.update_novel_title(old_title, new_title)
+    else:
+        importer.run()
