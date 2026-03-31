@@ -42,9 +42,18 @@ def get_novel_content(novel_title):
     
     return content
 
-def call_ai_api(api_key, content):
+def call_ai_api(api_key, content, existing_scenes=None):
     """调用AI API分析小说中出现三次以上的场景"""
     url = "https://api.moonshot.cn/v1/chat/completions"
+    
+    # 构建已存在场景的提示
+    existing_scenes_text = ""
+    if existing_scenes and len(existing_scenes) > 0:
+        existing_scenes_text = f"""
+【已存在的场景】
+以下场景已经存在，请不要返回这些场景：
+{', '.join(existing_scenes)}
+"""
     
     # 构建提示词
     prompt = f"""请详细分析以下小说内容，提取所有出现三次以上的重要场景。要求：
@@ -56,7 +65,9 @@ def call_ai_api(api_key, content):
 4. 根据小说内容进行合理推断，但必须符合小说设定
 5. 所有描述必须具体、生动、可用于漫画场景设计
 6. 【重要】合并重复场景：如果不同名称实际上是同一个场景（如"古玩店"和"古德斋古玩店"），请合并为一个场景，使用最准确的名称
+7. 【重要】排除已存在场景：不要返回已经存在的场景
 
+{existing_scenes_text}
 【详细信息要求】
 1. 基本信息：
    - 名称：场景名称，必须准确
@@ -295,14 +306,20 @@ def main():
     for novel_id, novel_title in novels:
         print(f"\n正在分析小说场景: {novel_title}")
         
+        # 获取已存在的场景名称
+        cursor = conn.cursor()
+        cursor.execute("SELECT name FROM scenes WHERE novel_id = %s", (novel_id,))
+        existing_scenes = [row[0] for row in cursor.fetchall()]
+        cursor.close()
+        
         # 读取小说内容
         content = get_novel_content(novel_title)
         if not content:
             print(f"无法读取小说内容: {novel_title}")
             continue
         
-        # 调用AI API
-        response = call_ai_api(api_key, content)
+        # 调用AI API，传递已存在的场景名称
+        response = call_ai_api(api_key, content, existing_scenes)
         if not response:
             print(f"AI分析失败: {novel_title}")
             continue
