@@ -154,7 +154,8 @@ def create_image_task(api_key, prompt):
     
     headers = {
         "Content-Type": "application/json",
-        "Authorization": f"Bearer {api_key}"
+        "Authorization": f"Bearer {api_key}",
+        "X-DashScope-Async": "enable"
     }
     
     data = {
@@ -164,8 +165,7 @@ def create_image_task(api_key, prompt):
         },
         "parameters": {
             "negative_prompt": "低分辨率，低画质，肢体畸形，手指畸形，画面过饱和，蜡像感，人脸无细节，过度光滑，画面具有AI感，构图混乱，文字模糊，扭曲",
-            "size": "2688*1536",  # 16:9比例
-            "stream": True
+            "size": "1024*1024",  # 1:1比例
         },
         "stream": True
     }
@@ -197,6 +197,15 @@ def query_task_status(api_key, task_id):
             print(f"查询任务响应内容: {response.text}")
             return None
         result = response.json()
+        status = result.get("output", {}).get("task_status")
+        print(f"任务状态: {status}")
+        # 打印完整的输出信息
+        if status == "FAILED":
+            error_message = result.get("output", {}).get("message", "未知错误")
+            print(f"任务失败原因: {error_message}")
+        elif status == "SUCCEEDED":
+            results = result.get("output", {}).get("results", [])
+            print(f"任务成功，结果数量: {len(results)}")
         return result
     except Exception as e:
         print(f"查询任务失败: {e}")
@@ -219,8 +228,8 @@ def call_image_api(api_key, prompt):
     print(f"任务创建成功，task_id: {task_id}")
     
     # 轮询查询任务状态
-    max_retries = 60
-    retry_interval = 5
+    max_retries = 20
+    retry_interval = 10
     
     for i in range(max_retries):
         print(f"第{i+1}次查询任务状态...")
@@ -229,7 +238,7 @@ def call_image_api(api_key, prompt):
             time.sleep(retry_interval)
             continue
         
-        status = status_result.get("output", {}).get("status")
+        status = status_result.get("output", {}).get("task_status")
         if status == "SUCCEEDED":
             print("任务完成！")
             return status_result
