@@ -65,23 +65,18 @@ def check_character_images(conn, novel_id, novel_title):
         # 检查每个角色的图片
         for character_id, name in characters:
             novel_dir = os.path.join(IMAGES_DIR, novel_title)
-            # 角色有3张图片：标准脸1、标准脸2、标准脸3
-            image_files = [
-                f"{name}_标准脸1.png",
-                f"{name}_标准脸2.png",
-                f"{name}_标准脸3.png"
-            ]
             
-            # 检查是否所有图片都存在
-            all_exist = True
-            for image_file in image_files:
-                image_path = os.path.join(novel_dir, image_file)
-                if not os.path.exists(image_path):
-                    all_exist = False
-                    break
+            # 检查是否存在角色的图片文件（支持时间戳）
+            has_images = False
+            if os.path.exists(novel_dir):
+                # 查找所有以角色名开头的图片文件
+                for file in os.listdir(novel_dir):
+                    if file.startswith(f"{name}_标准脸") and file.endswith(".png"):
+                        has_images = True
+                        break
             
-            # 如果图片不存在，更新状态为未生成
-            if not all_exist:
+            # 如果没有找到图片，更新状态为未生成
+            if not has_images:
                 cursor.execute("""
                     UPDATE characters 
                     SET is_generated = FALSE 
@@ -116,10 +111,18 @@ def check_scene_images(conn, novel_id, novel_title):
         # 检查每个场景的图片
         for scene_id, name in scenes:
             novel_dir = os.path.join(IMAGES_DIR, novel_title)
-            image_path = os.path.join(novel_dir, f"{name}_场景.png")
             
-            # 如果图片不存在，更新状态为未生成
-            if not os.path.exists(image_path):
+            # 检查是否存在场景的图片文件（支持时间戳）
+            has_image = False
+            if os.path.exists(novel_dir):
+                # 查找所有以场景名开头的图片文件
+                for file in os.listdir(novel_dir):
+                    if file.startswith(f"{name}_场景") and file.endswith(".png"):
+                        has_image = True
+                        break
+            
+            # 如果没有找到图片，更新状态为未生成
+            if not has_image:
                 cursor.execute("""
                     UPDATE scenes 
                     SET is_generated = FALSE 
@@ -154,10 +157,18 @@ def check_item_images(conn, novel_id, novel_title):
         # 检查每个物品的图片
         for item_id, name in items:
             novel_dir = os.path.join(IMAGES_DIR, novel_title)
-            image_path = os.path.join(novel_dir, f"{name}_物品.png")
             
-            # 如果图片不存在，更新状态为未生成
-            if not os.path.exists(image_path):
+            # 检查是否存在物品的图片文件（支持时间戳）
+            has_image = False
+            if os.path.exists(novel_dir):
+                # 查找所有以物品名开头的图片文件
+                for file in os.listdir(novel_dir):
+                    if file.startswith(f"{name}_物品") and file.endswith(".png"):
+                        has_image = True
+                        break
+            
+            # 如果没有找到图片，更新状态为未生成
+            if not has_image:
                 cursor.execute("""
                     UPDATE items 
                     SET is_generated = FALSE 
