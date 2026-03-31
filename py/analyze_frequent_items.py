@@ -224,13 +224,13 @@ def save_items_to_db(conn, novel_id, items):
             """, (
                 novel_id,
                 name,
-                item.get('description'),
-                item.get('item_type'),
-                item.get('item_function'),
-                item.get('rarity'),
-                item.get('appearance'),
-                item.get('origin'),
-                item.get('owner'),
+                str(item.get('description') or ''),
+                str(item.get('item_type') or ''),
+                str(item.get('item_function') or ''),
+                str(item.get('rarity') or ''),
+                str(item.get('appearance') or ''),
+                str(item.get('origin') or ''),
+                str(item.get('owner') or ''),
                 importance
             ))
             

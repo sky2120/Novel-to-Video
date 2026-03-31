@@ -197,9 +197,9 @@ def save_scenes_to_db(conn, novel_id, scenes):
         
         for scene in scenes:
             # 确保所有字段都是字符串或数字类型
-            name = scene.get('name') or ''
-            description = scene.get('description') or ''
-            scene_type = scene.get('scene_type') or ''
+            name = str(scene.get('name') or '')
+            description = str(scene.get('description') or '')
+            scene_type = str(scene.get('scene_type') or '')
             
             # 检查是否已存在类似场景
             if name in existing_scene_names:
@@ -211,11 +211,11 @@ def save_scenes_to_db(conn, novel_id, scenes):
             if isinstance(visual_details, dict):
                 visual_details = json.dumps(visual_details, ensure_ascii=False)
             else:
-                visual_details = visual_details or ''
+                visual_details = str(visual_details or '')
                 
-            atmosphere = scene.get('atmosphere') or ''
-            time_period = scene.get('time_period') or ''
-            weather = scene.get('weather') or ''
+            atmosphere = str(scene.get('atmosphere') or '')
+            time_period = str(scene.get('time_period') or '')
+            weather = str(scene.get('weather') or '')
             
             # 处理数字字段，确保是整数
             appearance_count = scene.get('appearance_count')
