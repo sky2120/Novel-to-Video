@@ -180,14 +180,27 @@ def connect_db(config):
         return None
 
 def save_items_to_db(conn, novel_id, items):
-    """保存物品信息到数据库"""
+    """保存物品信息到数据库，避免重复插入类似物品"""
     if not conn or not items:
         return False
     
     cursor = conn.cursor()
     
     try:
+        # 获取已存在的物品名称列表
+        cursor.execute("SELECT name FROM items WHERE novel_id = %s", (novel_id,))
+        existing_item_names = {row[0] for row in cursor.fetchall()}
+        
+        inserted_count = 0
+        
         for item in items:
+            name = item.get('name')
+            
+            # 检查是否已存在类似物品
+            if name in existing_item_names:
+                print(f"跳过已存在的物品: {name}")
+                continue
+            
             # 处理数字字段，确保是整数
             appearance_count = item.get('appearance_count')
             if appearance_count is not None:
@@ -208,19 +221,9 @@ def save_items_to_db(conn, novel_id, items):
                     novel_id, name, description, item_type, item_function,
                     rarity, appearance, origin, owner, importance
                 ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                ON DUPLICATE KEY UPDATE
-                    description = VALUES(description),
-                    item_type = VALUES(item_type),
-                    item_function = VALUES(item_function),
-                    rarity = VALUES(rarity),
-                    appearance = VALUES(appearance),
-                    origin = VALUES(origin),
-                    owner = VALUES(owner),
-                    importance = VALUES(importance),
-                    updated_at = CURRENT_TIMESTAMP
             """, (
                 novel_id,
-                item.get('name'),
+                name,
                 item.get('description'),
                 item.get('item_type'),
                 item.get('item_function'),
@@ -230,8 +233,12 @@ def save_items_to_db(conn, novel_id, items):
                 item.get('owner'),
                 importance
             ))
+            
+            inserted_count += 1
+            existing_item_names.add(name)
         
         conn.commit()
+        print(f"成功插入 {inserted_count} 个新物品")
         return True
     except Exception as e:
         print(f"保存物品信息失败: {e}")

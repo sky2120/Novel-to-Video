@@ -182,18 +182,29 @@ def connect_db(config):
         return None
 
 def save_scenes_to_db(conn, novel_id, scenes):
-    """保存场景信息到数据库"""
+    """保存场景信息到数据库，避免重复插入类似场景"""
     if not conn or not scenes:
         return False
     
     cursor = conn.cursor()
     
     try:
+        # 获取已存在的场景名称列表
+        cursor.execute("SELECT name FROM scenes WHERE novel_id = %s", (novel_id,))
+        existing_scene_names = {row[0] for row in cursor.fetchall()}
+        
+        inserted_count = 0
+        
         for scene in scenes:
             # 确保所有字段都是字符串或数字类型
             name = scene.get('name') or ''
             description = scene.get('description') or ''
             scene_type = scene.get('scene_type') or ''
+            
+            # 检查是否已存在类似场景
+            if name in existing_scene_names:
+                print(f"跳过已存在的场景: {name}")
+                continue
             
             # 处理visual_details字段，如果是字典则转换为JSON字符串
             visual_details = scene.get('visual_details')
@@ -221,23 +232,11 @@ def save_scenes_to_db(conn, novel_id, scenes):
                 except (ValueError, TypeError):
                     importance = None
             
-
-            
             cursor.execute("""
                 INSERT INTO scenes (
                     novel_id, name, description, scene_type, appearance_count,
                     visual_details, atmosphere, time_period, weather, importance
                 ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                ON DUPLICATE KEY UPDATE
-                    description = VALUES(description),
-                    scene_type = VALUES(scene_type),
-                    appearance_count = VALUES(appearance_count),
-                    visual_details = VALUES(visual_details),
-                    atmosphere = VALUES(atmosphere),
-                    time_period = VALUES(time_period),
-                    weather = VALUES(weather),
-                    importance = VALUES(importance),
-                    updated_at = CURRENT_TIMESTAMP
             """, (
                 novel_id,
                 name,
@@ -250,8 +249,12 @@ def save_scenes_to_db(conn, novel_id, scenes):
                 weather,
                 importance
             ))
+            
+            inserted_count += 1
+            existing_scene_names.add(name)
         
         conn.commit()
+        print(f"成功插入 {inserted_count} 个新场景")
         return True
     except Exception as e:
         print(f"保存场景信息失败: {e}")
