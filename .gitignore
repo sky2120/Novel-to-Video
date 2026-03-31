@@ -2,6 +2,10 @@
 novel/*
 !novel/.gitkeep
 
+# 忽略角色图片文件夹中的内容，但保留文件夹本身
+role/*
+!role/.gitkeep
+
 # 忽略API密钥文件
 kimi api_key.txt
 
