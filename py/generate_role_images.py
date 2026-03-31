@@ -238,7 +238,7 @@ def call_image_api(api_key, prompt):
     print(f"任务创建成功，task_id: {task_id}")
     
     # 轮询查询任务状态
-    max_retries = 20
+    max_retries = 60  # 增加到60次，每次10秒，总共10分钟
     retry_interval = 10
     
     for i in range(max_retries):
