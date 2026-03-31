@@ -103,6 +103,13 @@ python py/generate_scene_images.py
 python py/generate_item_images.py
 ```
 
+#### 9. 运行完整流程（推荐）
+
+```bash
+# 按照顺序自动运行所有脚本
+python py/main.py
+```
+
 ## 项目结构
 
 ```
@@ -126,6 +133,7 @@ AI漫剧/
 │   │   └── 物品名_物品_时间戳.png
 │   └── .gitkeep
 └── py/                      # Python脚本目录
+    ├── main.py                        # 主程序（自动运行完整流程）
     ├── import_novel_to_db.py          # 小说导入数据库
     ├── analyze_novel_style.py         # 小说风格分析
     ├── analyze_novel_characters.py    # 角色信息提取
