@@ -8,6 +8,7 @@ role/*
 
 # 忽略API密钥文件
 kimi api_key.txt
+qwen_apk_key.txt
 
 # 忽略生成的结果文件
 storyboard_result.json
