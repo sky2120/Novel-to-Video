@@ -148,9 +148,9 @@ def generate_prompt(character):
     
     return "，".join(prompt_parts)
 
-def call_image_api(api_key, prompt):
-    """调用文生图API生成角色图片"""
-    url = "https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation"
+def create_image_task(api_key, prompt):
+    """创建异步图像生成任务"""
+    url = "https://dashscope.aliyuncs.com/api/v1/services/aigc/text2image/image-synthesis"
     
     headers = {
         "Content-Type": "application/json",
@@ -160,36 +160,87 @@ def call_image_api(api_key, prompt):
     data = {
         "model": "wanx2.0-t2i-turbo",
         "input": {
-            "messages": [
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "text": prompt
-                        }
-                    ]
-                }
-            ]
+            "prompt": prompt
         },
         "parameters": {
             "negative_prompt": "低分辨率，低画质，肢体畸形，手指畸形，画面过饱和，蜡像感，人脸无细节，过度光滑，画面具有AI感，构图混乱，文字模糊，扭曲",
-            "prompt_extend": True,
-            "watermark": False,
-            "size": "2688*1536"  # 16:9比例
-        }
+            "size": "2688*1536",  # 16:9比例
+            "stream": True
+        },
+        "stream": True
     }
     
     try:
         response = requests.post(url, headers=headers, json=data)
-        print(f"API响应状态码: {response.status_code}")
+        print(f"创建任务响应状态码: {response.status_code}")
         if response.status_code != 200:
-            print(f"API响应内容: {response.text}")
+            print(f"创建任务响应内容: {response.text}")
             return None
         result = response.json()
         return result
     except Exception as e:
-        print(f"API调用失败: {e}")
+        print(f"创建任务失败: {e}")
         return None
+
+def query_task_status(api_key, task_id):
+    """查询任务状态"""
+    url = f"https://dashscope.aliyuncs.com/api/v1/tasks/{task_id}"
+    
+    headers = {
+        "Authorization": f"Bearer {api_key}"
+    }
+    
+    try:
+        response = requests.get(url, headers=headers)
+        print(f"查询任务响应状态码: {response.status_code}")
+        if response.status_code != 200:
+            print(f"查询任务响应内容: {response.text}")
+            return None
+        result = response.json()
+        return result
+    except Exception as e:
+        print(f"查询任务失败: {e}")
+        return None
+
+def call_image_api(api_key, prompt):
+    """调用文生图API生成角色图片（异步调用）"""
+    import time
+    
+    # 创建任务
+    task_result = create_image_task(api_key, prompt)
+    if not task_result:
+        return None
+    
+    task_id = task_result.get("output", {}).get("task_id")
+    if not task_id:
+        print("获取task_id失败")
+        return None
+    
+    print(f"任务创建成功，task_id: {task_id}")
+    
+    # 轮询查询任务状态
+    max_retries = 60
+    retry_interval = 5
+    
+    for i in range(max_retries):
+        print(f"第{i+1}次查询任务状态...")
+        status_result = query_task_status(api_key, task_id)
+        if not status_result:
+            time.sleep(retry_interval)
+            continue
+        
+        status = status_result.get("output", {}).get("status")
+        if status == "SUCCEEDED":
+            print("任务完成！")
+            return status_result
+        elif status == "FAILED":
+            print(f"任务失败: {status_result.get('output', {}).get('message')}")
+            return None
+        
+        time.sleep(retry_interval)
+    
+    print("任务超时")
+    return None
 
 def download_image(image_url, save_path):
     """下载并保存图片"""
@@ -277,7 +328,7 @@ def main():
             
             # 提取图片URL
             try:
-                image_url = result['output']['choices'][0]['message']['content'][0]['image']
+                image_url = result['output']['results'][0]['url']
                 print(f"图片URL: {image_url}")
                 
                 # 保存图片
@@ -295,6 +346,7 @@ def main():
                     
             except Exception as e:
                 print(f"处理图片结果失败: {e}")
+                print(f"结果结构: {result}")
     
     conn.close()
     print("\n角色图片生成完成")
