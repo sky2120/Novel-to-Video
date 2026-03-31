@@ -213,9 +213,10 @@ def save_scenes_to_db(conn, novel_id, scenes):
             else:
                 visual_details = str(visual_details or '')
                 
-            atmosphere = str(scene.get('atmosphere') or '')
-            time_period = str(scene.get('time_period') or '')
-            weather = str(scene.get('weather') or '')
+            # 限制字段长度，避免数据库字段过长错误
+            atmosphere = str(scene.get('atmosphere') or '')[:100]
+            time_period = str(scene.get('time_period') or '')[:50]
+            weather = str(scene.get('weather') or '')[:50]
             
             # 处理数字字段，确保是整数
             appearance_count = scene.get('appearance_count')
