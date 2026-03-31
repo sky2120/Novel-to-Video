@@ -10,7 +10,6 @@ import pymysql
 import requests
 import urllib.request
 import time
-from concurrent.futures import ThreadPoolExecutor
 
 # 配置文件路径（相对于项目根目录）
 CONFIG_FILE = 'db_config.json'
@@ -333,6 +332,9 @@ def generate_character_image(character, novel_dir, api_key):
             else:
                 print(f"图片保存失败: {name}_{face_name}")
                 
+            # 添加延迟，避免API速率限制
+            time.sleep(2)
+                
         except Exception as e:
             print(f"处理图片结果失败: {e}")
             print(f"结果结构: {result}")
@@ -377,21 +379,13 @@ def main():
         
         print(f"找到 {len(characters)} 个未生成的角色")
         
-        # 使用线程池并发生成图片
-        with ThreadPoolExecutor(max_workers=5) as executor:
-            # 提交所有角色的图片生成任务
-            futures = []
-            for character in characters:
-                future = executor.submit(generate_character_image, character, novel_dir, api_key)
-                futures.append(future)
-            
-            # 等待所有任务完成并更新状态
-            for future in futures:
-                character_id = future.result()
-                if update_character_status(conn, character_id):
-                    print(f"角色状态更新成功: ID={character_id}")
-                else:
-                    print(f"角色状态更新失败: ID={character_id}")
+        # 串行生成图片，避免API限流
+        for character in characters:
+            character_id = generate_character_image(character, novel_dir, api_key)
+            if update_character_status(conn, character_id):
+                print(f"角色状态更新成功: ID={character_id}")
+            else:
+                print(f"角色状态更新失败: ID={character_id}")
     
     conn.close()
     print("\n角色图片生成完成")

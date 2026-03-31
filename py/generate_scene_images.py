@@ -10,7 +10,6 @@ import pymysql
 import requests
 import urllib.request
 import time
-from concurrent.futures import ThreadPoolExecutor
 
 # 配置文件路径（相对于项目根目录）
 CONFIG_FILE = 'db_config.json'
@@ -280,6 +279,9 @@ def generate_scene_image(scene, novel_dir, api_key):
         else:
             print(f"图片保存失败: {name}")
             
+        # 添加延迟，避免API速率限制
+        time.sleep(2)
+            
     except Exception as e:
         print(f"处理图片结果失败: {e}")
         print(f"结果结构: {result}")
@@ -324,21 +326,13 @@ def main():
         
         print(f"找到 {len(scenes)} 个未生成的场景")
         
-        # 使用线程池并发生成图片
-        with ThreadPoolExecutor(max_workers=5) as executor:
-            # 提交所有场景的图片生成任务
-            futures = []
-            for scene in scenes:
-                future = executor.submit(generate_scene_image, scene, novel_dir, api_key)
-                futures.append(future)
-            
-            # 等待所有任务完成并更新状态
-            for future in futures:
-                scene_id = future.result()
-                if update_scene_status(conn, scene_id):
-                    print(f"场景状态更新成功: ID={scene_id}")
-                else:
-                    print(f"场景状态更新失败: ID={scene_id}")
+        # 串行生成图片，避免API限流
+        for scene in scenes:
+            scene_id = generate_scene_image(scene, novel_dir, api_key)
+            if update_scene_status(conn, scene_id):
+                print(f"场景状态更新成功: ID={scene_id}")
+            else:
+                print(f"场景状态更新失败: ID={scene_id}")
     
     conn.close()
     print("\n场景图片生成完成")
