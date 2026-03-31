@@ -152,29 +152,50 @@ def call_ai_api(api_key, content, existing_scenes=None):
 
 def parse_ai_response(response_text):
     """解析AI响应"""
+    print(f"AI响应内容: {response_text[:500]}...")  # 打印部分响应内容用于调试
+    
     try:
         # 尝试直接解析JSON数组
         return json.loads(response_text)
-    except json.JSONDecodeError:
+    except json.JSONDecodeError as e:
+        print(f"直接解析失败: {e}")
+        
         # 尝试提取JSON部分
         start = response_text.find('[')
         end = response_text.rfind(']')
         if start != -1 and end != -1:
             json_str = response_text[start:end+1]
+            print(f"提取的JSON部分: {json_str[:500]}...")
             try:
                 return json.loads(json_str)
-            except:
-                pass
+            except json.JSONDecodeError as e2:
+                print(f"提取JSON解析失败: {e2}")
         
         # 尝试提取单个JSON对象
         start = response_text.find('{')
         end = response_text.rfind('}')
         if start != -1 and end != -1:
             json_str = response_text[start:end+1]
+            print(f"提取的单个JSON对象: {json_str[:500]}...")
             try:
                 return [json.loads(json_str)]
-            except:
-                pass
+            except json.JSONDecodeError as e3:
+                print(f"单个JSON对象解析失败: {e3}")
+                
+        # 尝试清理文本，移除代码块标记等
+        cleaned_text = response_text.strip()
+        if cleaned_text.startswith('```json'):
+            cleaned_text = cleaned_text[7:]
+        if cleaned_text.endswith('```'):
+            cleaned_text = cleaned_text[:-3]
+        cleaned_text = cleaned_text.strip()
+        
+        print(f"清理后的文本: {cleaned_text[:500]}...")
+        try:
+            return json.loads(cleaned_text)
+        except json.JSONDecodeError as e4:
+            print(f"清理后解析失败: {e4}")
+            
         return None
 
 def connect_db(config):
