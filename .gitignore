@@ -43,5 +43,8 @@ temp/
 *.swo
 *~
 
+# 忽略Trae IDE配置文件
+.trae/
+
 # 忽略项目思路文件
 项目思路文件.txt
