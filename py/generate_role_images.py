@@ -80,7 +80,7 @@ def get_characters_by_novel(conn, novel_id):
     finally:
         cursor.close()
 
-def generate_prompt(character):
+def generate_prompt(character, angle_type):
     """生成角色描述提示词"""
     (id, name, age, gender, personality, identity, hairstyle, face_shape, 
      eyes, eyebrows, nose_mouth, skin_color, height_atmosphere, body_type, 
@@ -142,6 +142,14 @@ def generate_prompt(character):
     # 漫画风格
     if art_style:
         prompt_parts.append(f"漫画风格：{art_style}")
+    
+    # 添加角度描述
+    if angle_type == "front":
+        prompt_parts.append("正面视角，面部特写，清晰的五官细节")
+    elif angle_type == "side":
+        prompt_parts.append("侧面视角，面部轮廓清晰，侧脸轮廓分明")
+    elif angle_type == "half":
+        prompt_parts.append("半身像，上半身，姿态自然，表情生动")
     
     # 添加通用描述
     prompt_parts.append("漫画风格，国漫风格，线条清晰，色彩鲜明，角色立绘，高清细节，高质量渲染")
@@ -319,43 +327,53 @@ def main():
         
         print(f"找到 {len(characters)} 个未生成的角色")
         
-        # 为每个角色生成图片
+        # 为每个角色生成3张标准脸
+        angle_types = [
+            ("front", "标准脸1"),
+            ("side", "标准脸2"),
+            ("half", "标准脸3")
+        ]
+        
         for character in characters:
             character_id, name, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _ = character
             
             print(f"\n正在生成角色: {name}")
             
-            # 生成提示词
-            prompt = generate_prompt(character)
-            print(f"提示词: {prompt}")
-            
-            # 调用API生成图片
-            result = call_image_api(api_key, prompt)
-            if not result:
-                print(f"生成图片失败: {name}")
-                continue
-            
-            # 提取图片URL
-            try:
-                image_url = result['output']['results'][0]['url']
-                print(f"图片URL: {image_url}")
+            # 生成3张不同角度的标准脸
+            for angle_type, face_name in angle_types:
+                print(f"\n生成{face_name} ({angle_type})...")
                 
-                # 保存图片
-                image_path = os.path.join(novel_dir, f"{name}.png")
-                if download_image(image_url, image_path):
-                    print(f"图片保存成功: {image_path}")
+                # 生成提示词
+                prompt = generate_prompt(character, angle_type)
+                print(f"提示词: {prompt}")
+                
+                # 调用API生成图片
+                result = call_image_api(api_key, prompt)
+                if not result:
+                    print(f"生成图片失败: {name}_{face_name}")
+                    continue
+                
+                # 提取图片URL
+                try:
+                    image_url = result['output']['results'][0]['url']
+                    print(f"图片URL: {image_url}")
                     
-                    # 更新角色状态
-                    if update_character_status(conn, character_id):
-                        print(f"角色状态更新成功")
+                    # 保存图片（按照命名规范）
+                    image_path = os.path.join(novel_dir, f"{name}_{face_name}.png")
+                    if download_image(image_url, image_path):
+                        print(f"图片保存成功: {image_path}")
                     else:
-                        print(f"角色状态更新失败")
-                else:
-                    print(f"图片保存失败: {name}")
-                    
-            except Exception as e:
-                print(f"处理图片结果失败: {e}")
-                print(f"结果结构: {result}")
+                        print(f"图片保存失败: {name}_{face_name}")
+                        
+                except Exception as e:
+                    print(f"处理图片结果失败: {e}")
+                    print(f"结果结构: {result}")
+            
+            # 更新角色状态（所有图片生成完成后更新）
+            if update_character_status(conn, character_id):
+                print(f"角色状态更新成功")
+            else:
+                print(f"角色状态更新失败")
     
     conn.close()
     print("\n角色图片生成完成")
