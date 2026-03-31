@@ -144,7 +144,7 @@ def generate_prompt(character):
         prompt_parts.append(f"漫画风格：{art_style}")
     
     # 添加通用描述
-    prompt_parts.append("高清细节，高质量渲染，3D渲染，动漫风格，角色立绘")
+    prompt_parts.append("漫画风格，国漫风格，线条清晰，色彩鲜明，角色立绘，高清细节，高质量渲染")
     
     return "，".join(prompt_parts)
 
