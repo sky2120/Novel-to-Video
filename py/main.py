@@ -136,13 +136,70 @@ def main():
     
     # 步骤4：图像生成
     # 角色图像生成
-    success, _ = run_script_with_check("generate_role_images.py", "没有找到未生成的角色")
+    print("\n" + "="*60)
+    print("开始运行：generate_role_images.py")
+    print("="*60)
+    
+    script_path = os.path.join(SCRIPT_DIR, "generate_role_images.py")
+    result = subprocess.run(
+        [sys.executable, script_path],
+        cwd=os.path.dirname(SCRIPT_DIR),
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE
+    )
+    
+    print("脚本运行成功！")
+    print("输出：")
+    print(result.stdout)
+    
+    if result.stderr:
+        print("\n警告信息：")
+        print(result.stderr)
     
     # 场景图像生成
-    success, _ = run_script_with_check("generate_scene_images.py", "没有找到未生成的场景")
+    print("\n" + "="*60)
+    print("开始运行：generate_scene_images.py")
+    print("="*60)
+    
+    script_path = os.path.join(SCRIPT_DIR, "generate_scene_images.py")
+    result = subprocess.run(
+        [sys.executable, script_path],
+        cwd=os.path.dirname(SCRIPT_DIR),
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE
+    )
+    
+    print("脚本运行成功！")
+    print("输出：")
+    print(result.stdout)
+    
+    if result.stderr:
+        print("\n警告信息：")
+        print(result.stderr)
     
     # 物品图像生成
-    success, _ = run_script_with_check("generate_item_images.py", "没有找到未生成的物品")
+    print("\n" + "="*60)
+    print("开始运行：generate_item_images.py")
+    print("="*60)
+    
+    script_path = os.path.join(SCRIPT_DIR, "generate_item_images.py")
+    result = subprocess.run(
+        [sys.executable, script_path],
+        cwd=os.path.dirname(SCRIPT_DIR),
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE
+    )
+    
+    print("脚本运行成功！")
+    print("输出：")
+    print(result.stdout)
+    
+    if result.stderr:
+        print("\n警告信息：")
+        print(result.stderr)
     
     print("\n" + "="*60)
     print("🎉 AI漫剧自动处理流程完成！")
