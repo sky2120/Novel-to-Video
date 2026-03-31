@@ -12,7 +12,7 @@ import requests
 # 配置文件路径
 CONFIG_FILE = 'db_config.json'
 NOVEL_DIR = 'novel'
-API_KEY_FILE = 'qwen_apk_key.txt'
+API_KEY_FILE = 'kimi api_key.txt'
 
 def load_config():
     """加载数据库配置"""
