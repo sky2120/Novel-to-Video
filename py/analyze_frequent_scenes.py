@@ -10,19 +10,17 @@ import pymysql
 import requests
 
 # 配置文件路径
-CONFIG_FILE = 'db_config.json'
+CONFIG_FILE = 'config.json'
 NOVEL_DIR = 'novel'
-API_KEY_FILE = 'kimi api_key.txt'
 
 def load_config():
-    """加载数据库配置"""
+    """加载配置"""
     with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
         return json.load(f)
 
-def load_api_key():
+def load_api_key(config):
     """加载API密钥"""
-    with open(API_KEY_FILE, 'r', encoding='utf-8') as f:
-        return f.read().strip()
+    return config['api']['kimi_api_key']
 
 def get_novel_content(novel_title):
     """读取小说内容"""
@@ -202,12 +200,12 @@ def connect_db(config):
     """连接数据库"""
     try:
         conn = pymysql.connect(
-            host=config['host'],
-            port=config['port'],
-            user=config['user'],
-            password=config['password'],
-            database=config['database'],
-            charset=config['charset']
+            host=config['database']['host'],
+            port=config['database']['port'],
+            user=config['database']['user'],
+            password=config['database']['password'],
+            database=config['database']['database'],
+            charset=config['database']['charset']
         )
         return conn
     except Exception as e:
@@ -303,11 +301,15 @@ def main():
     
     # 加载配置
     config = load_config()
-    api_key = load_api_key()
+    api_key = load_api_key(config)
     
     # 连接数据库
     conn = connect_db(config)
     if not conn:
+        print("\n" + "="*60)
+        print("❌ 程序执行失败")
+        print("未完成：数据库连接失败")
+        print("="*60)
         return
     
     # 获取待分析的小说
@@ -319,9 +321,19 @@ def main():
     if not novels:
         print("没有待分析场景的小说")
         conn.close()
+        print("\n" + "="*60)
+        print("⚠️  程序执行完成")
+        print("已完成：连接数据库、检查待分析小说")
+        print("未完成：未找到待分析场景的小说")
+        print("="*60)
         return
     
     print(f"找到 {len(novels)} 本待分析场景的小说")
+    
+    success_count = 0
+    failed_count = 0
+    success_novels = []
+    failed_novels = []
     
     # 分析每本小说的场景
     for novel_id, novel_title in novels:
@@ -337,18 +349,24 @@ def main():
         content = get_novel_content(novel_title)
         if not content:
             print(f"无法读取小说内容: {novel_title}")
+            failed_count += 1
+            failed_novels.append(novel_title)
             continue
         
         # 调用AI API，传递已存在的场景名称
         response = call_ai_api(api_key, content, existing_scenes)
         if not response:
             print(f"AI分析失败: {novel_title}")
+            failed_count += 1
+            failed_novels.append(novel_title)
             continue
         
         # 解析结果
         scenes = parse_ai_response(response)
         if not scenes:
             print(f"解析AI响应失败: {novel_title}")
+            failed_count += 1
+            failed_novels.append(novel_title)
             continue
         
         print(f"找到 {len(scenes)} 个出现三次以上的场景")
@@ -356,11 +374,32 @@ def main():
         # 保存到数据库
         if save_scenes_to_db(conn, novel_id, scenes):
             print(f"成功保存场景信息: {novel_title}")
+            success_count += 1
+            success_novels.append(novel_title)
         else:
             print(f"保存场景信息失败: {novel_title}")
+            failed_count += 1
+            failed_novels.append(novel_title)
     
     conn.close()
-    print("\n场景分析完成")
+    
+    print("\n" + "="*60)
+    print("✅ 程序执行完成")
+    print(f"总计: {len(novels)} 本小说")
+    print(f"成功: {success_count} 本")
+    print(f"失败: {failed_count} 本")
+    
+    if success_novels:
+        print("\n已完成:")
+        for novel in success_novels:
+            print(f"  - {novel}")
+    
+    if failed_novels:
+        print("\n未完成:")
+        for novel in failed_novels:
+            print(f"  - {novel}")
+    
+    print("="*60)
 
 if __name__ == "__main__":
     main()

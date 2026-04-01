@@ -9,11 +9,11 @@ import json
 import pymysql
 
 # 配置文件路径（相对于项目根目录）
-CONFIG_FILE = 'db_config.json'
+CONFIG_FILE = 'config.json'
 IMAGES_DIR = 'images'
 
 def load_config():
-    """加载数据库配置"""
+    """加载配置"""
     with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
         return json.load(f)
 
@@ -21,12 +21,12 @@ def connect_db(config):
     """连接数据库"""
     try:
         conn = pymysql.connect(
-            host=config['host'],
-            port=config['port'],
-            user=config['user'],
-            password=config['password'],
-            database=config['database'],
-            charset=config['charset']
+            host=config['database']['host'],
+            port=config['database']['port'],
+            user=config['database']['user'],
+            password=config['database']['password'],
+            database=config['database']['database'],
+            charset=config['database']['charset']
         )
         return conn
     except Exception as e:
@@ -66,14 +66,24 @@ def check_character_images(conn, novel_id, novel_title):
         for character_id, name in characters:
             novel_dir = os.path.join(IMAGES_DIR, novel_title)
             
-            # 检查是否存在角色的图片文件（支持时间戳）
+            # 检查是否存在角色的图片文件（新格式：从数据库获取路径）
             has_images = False
-            if os.path.exists(novel_dir):
-                # 查找所有以角色名开头的图片文件
-                for file in os.listdir(novel_dir):
-                    if file.startswith(f"{name}_标准脸") and file.endswith(".png"):
-                        has_images = True
-                        break
+            
+            # 从数据库获取角色的图片路径
+            cursor.execute("""
+                SELECT face_image_front, face_image_side, face_image_half 
+                FROM characters 
+                WHERE id = %s
+            """, (character_id,))
+            image_paths = cursor.fetchone()
+            
+            if image_paths:
+                face_image_front, face_image_side, face_image_half = image_paths
+                # 检查任何一个图片路径是否存在
+                if (face_image_front and os.path.exists(face_image_front)) or \
+                   (face_image_side and os.path.exists(face_image_side)) or \
+                   (face_image_half and os.path.exists(face_image_half)):
+                    has_images = True
             
             # 如果没有找到图片，更新状态为未生成
             if not has_images:
@@ -112,14 +122,19 @@ def check_scene_images(conn, novel_id, novel_title):
         for scene_id, name in scenes:
             novel_dir = os.path.join(IMAGES_DIR, novel_title)
             
-            # 检查是否存在场景的图片文件（支持时间戳）
+            # 检查是否存在场景的图片文件（新格式：从数据库获取路径）
             has_image = False
-            if os.path.exists(novel_dir):
-                # 查找所有以场景名开头的图片文件
-                for file in os.listdir(novel_dir):
-                    if file.startswith(f"{name}_场景") and file.endswith(".png"):
-                        has_image = True
-                        break
+            
+            # 从数据库获取场景的图片路径
+            cursor.execute("""
+                SELECT image_url 
+                FROM scenes 
+                WHERE id = %s
+            """, (scene_id,))
+            image_path = cursor.fetchone()
+            
+            if image_path and image_path[0] and os.path.exists(image_path[0]):
+                has_image = True
             
             # 如果没有找到图片，更新状态为未生成
             if not has_image:
@@ -158,14 +173,19 @@ def check_item_images(conn, novel_id, novel_title):
         for item_id, name in items:
             novel_dir = os.path.join(IMAGES_DIR, novel_title)
             
-            # 检查是否存在物品的图片文件（支持时间戳）
+            # 检查是否存在物品的图片文件（新格式：从数据库获取路径）
             has_image = False
-            if os.path.exists(novel_dir):
-                # 查找所有以物品名开头的图片文件
-                for file in os.listdir(novel_dir):
-                    if file.startswith(f"{name}_物品") and file.endswith(".png"):
-                        has_image = True
-                        break
+            
+            # 从数据库获取物品的图片路径
+            cursor.execute("""
+                SELECT image_url 
+                FROM items 
+                WHERE id = %s
+            """, (item_id,))
+            image_path = cursor.fetchone()
+            
+            if image_path and image_path[0] and os.path.exists(image_path[0]):
+                has_image = True
             
             # 如果没有找到图片，更新状态为未生成
             if not has_image:

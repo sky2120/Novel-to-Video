@@ -8,12 +8,12 @@ import os
 import json
 import pymysql
 
-# 配置文件路径（相对于当前工作目录）
-CONFIG_FILE = 'db_config.json'
+# 配置文件路径（相对于项目根目录）
+CONFIG_FILE = 'config.json'
 NOVEL_DIR = 'novel'
 
 def load_config():
-    """加载数据库配置"""
+    """加载配置"""
     with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
         return json.load(f)
 
@@ -31,12 +31,12 @@ def connect_db(config):
     """连接数据库"""
     try:
         conn = pymysql.connect(
-            host=config['host'],
-            port=config['port'],
-            user=config['user'],
-            password=config['password'],
-            database=config['database'],
-            charset=config['charset']
+            host=config['database']['host'],
+            port=config['database']['port'],
+            user=config['database']['user'],
+            password=config['database']['password'],
+            database=config['database']['database'],
+            charset=config['database']['charset']
         )
         return conn
     except Exception as e:
@@ -82,7 +82,11 @@ def main():
     # 检查配置文件
     if not os.path.exists(CONFIG_FILE):
         print(f"错误：配置文件 {CONFIG_FILE} 不存在！")
-        print("请复制 db_config.example.json 为 db_config.json 并配置数据库信息")
+        print("请复制 config.example.json 为 config.json 并配置数据库信息")
+        print("\n" + "="*60)
+        print("[ERROR] 程序执行失败")
+        print("未完成：导入小说到数据库")
+        print("="*60)
         return
     
     # 加载配置
@@ -92,6 +96,11 @@ def main():
     novel_folders = get_novel_folders(NOVEL_DIR)
     if not novel_folders:
         print(f"在 {NOVEL_DIR} 目录下未找到小说文件夹")
+        print("\n" + "="*60)
+        print("[WARN] 程序执行完成")
+        print("已完成：检查配置文件、加载配置")
+        print("未完成：未找到小说文件夹，无法导入")
+        print("="*60)
         return
     
     print(f"找到 {len(novel_folders)} 本小说")
@@ -100,6 +109,16 @@ def main():
     conn = connect_db(config)
     if conn:
         import_novels_to_db(conn, novel_folders)
+        print("\n" + "="*60)
+        print("[OK] 程序执行完成")
+        print("已完成：导入小说到数据库")
+        print(f"找到 {len(novel_folders)} 本小说")
+        print("="*60)
+    else:
+        print("\n" + "="*60)
+        print("[ERROR] 程序执行失败")
+        print("未完成：数据库连接失败")
+        print("="*60)
 
 if __name__ == "__main__":
     main()

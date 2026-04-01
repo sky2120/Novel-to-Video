@@ -12,30 +12,28 @@ import urllib.request
 import time
 
 # 配置文件路径（相对于项目根目录）
-CONFIG_FILE = 'db_config.json'
-API_KEY_FILE = 'qwen_apk_key.txt'
+CONFIG_FILE = 'config.json'
 OUTPUT_DIR = 'images'
 
 def load_config():
-    """加载数据库配置"""
+    """加载配置"""
     with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
         return json.load(f)
 
-def load_api_key():
+def load_api_key(config):
     """加载API密钥"""
-    with open(API_KEY_FILE, 'r', encoding='utf-8') as f:
-        return f.read().strip()
+    return config['api']['qwen_api_key']
 
 def connect_db(config):
     """连接数据库"""
     try:
         conn = pymysql.connect(
-            host=config['host'],
-            port=config['port'],
-            user=config['user'],
-            password=config['password'],
-            database=config['database'],
-            charset=config['charset']
+            host=config['database']['host'],
+            port=config['database']['port'],
+            user=config['database']['user'],
+            password=config['database']['password'],
+            database=config['database']['database'],
+            charset=config['database']['charset']
         )
         return conn
     except Exception as e:
@@ -227,8 +225,8 @@ def download_image(image_url, save_path):
         print(f"下载图片失败: {e}")
         return False
 
-def update_item_status(conn, item_id):
-    """更新物品生成状态"""
+def update_item_image(conn, item_id, image_path):
+    """更新物品图片路径到数据库"""
     if not conn:
         return False
     
@@ -236,19 +234,20 @@ def update_item_status(conn, item_id):
     try:
         cursor.execute("""
             UPDATE items 
-            SET is_generated = TRUE 
+            SET image_url = %s, is_generated = TRUE 
             WHERE id = %s
-        """, (item_id,))
+        """, (image_path, item_id))
+        
         conn.commit()
         return True
     except Exception as e:
-        print(f"更新物品状态失败: {e}")
+        print(f"更新物品图片路径失败: {e}")
         conn.rollback()
         return False
     finally:
         cursor.close()
 
-def generate_item_image(item, novel_dir, api_key):
+def generate_item_image(conn, item, novel_dir, api_key):
     """生成单个物品的图片"""
     item_id, name, _, _, _, _, _, _, _, _ = item
     
@@ -272,12 +271,18 @@ def generate_item_image(item, novel_dir, api_key):
         # 生成时间戳
         timestamp = str(int(time.time()))
         
-        # 保存图片（按照命名规范）
-        image_path = os.path.join(novel_dir, f"{name}_物品_{timestamp}.png")
+        # 保存图片（使用时间戳命名，不包含中文）
+        image_path = os.path.join(novel_dir, f"i_{timestamp}.png")
         if download_image(image_url, image_path):
             print(f"图片保存成功: {image_path}")
+            
+            # 更新数据库，存储本地图片路径
+            if update_item_image(conn, item_id, image_path):
+                print(f"物品图片路径更新成功")
+            else:
+                print(f"物品图片路径更新失败")
         else:
-            print(f"图片保存失败: {name}")
+            print(f"图片保存失败")
             
         # 添加延迟，避免API速率限制
         time.sleep(2)
@@ -294,11 +299,15 @@ def main():
     
     # 加载配置
     config = load_config()
-    api_key = load_api_key()
+    api_key = load_api_key(config)
     
     # 连接数据库
     conn = connect_db(config)
     if not conn:
+        print("\n" + "="*60)
+        print("❌ 程序执行失败")
+        print("未完成：数据库连接失败")
+        print("="*60)
         return
     
     # 获取所有小说
@@ -306,9 +315,17 @@ def main():
     if not novels:
         print("没有找到小说")
         conn.close()
+        print("\n" + "="*60)
+        print("⚠️  程序执行完成")
+        print("已完成：连接数据库")
+        print("未完成：未找到小说")
+        print("="*60)
         return
     
     print(f"找到 {len(novels)} 本小说")
+    
+    total_items = 0
+    processed_items = 0
     
     # 处理每本小说
     for novel_id, novel_title in novels:
@@ -324,18 +341,28 @@ def main():
             print(f"没有找到未生成的物品")
             continue
         
+        total_items += len(items)
         print(f"找到 {len(items)} 个未生成的物品")
         
         # 串行生成图片，避免API限流
         for item in items:
-            item_id = generate_item_image(item, novel_dir, api_key)
-            if update_item_status(conn, item_id):
-                print(f"物品状态更新成功: ID={item_id}")
-            else:
-                print(f"物品状态更新失败: ID={item_id}")
+            item_id = generate_item_image(conn, item, novel_dir, api_key)
+            processed_items += 1
     
     conn.close()
-    print("\n物品图片生成完成")
+    
+    print("\n" + "="*60)
+    print("✅ 程序执行完成")
+    print(f"总计: {len(novels)} 本小说")
+    print(f"物品总数: {total_items} 个")
+    print(f"已处理: {processed_items} 个")
+    
+    if total_items == processed_items:
+        print("\n已完成: 所有物品图片生成")
+    else:
+        print("\n部分物品图片生成可能失败")
+    
+    print("="*60)
 
 if __name__ == "__main__":
     main()

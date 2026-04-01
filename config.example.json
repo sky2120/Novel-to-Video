@@ -1,0 +1,17 @@
+{
+    "database": {
+        "host": "your_host",
+        "port": 3306,
+        "user": "your_username",
+        "password": "your_password",
+        "database": "your_database",
+        "charset": "utf8mb4"
+    },
+    "api": {
+        "kimi_api_key": "sk-your_kimi_api_key_here",
+        "qwen_api_key": "sk-your_qwen_api_key_here"
+    },  
+    "server": {
+        "image_server_url": "https://your_image_server_url_here"
+    }
+}

@@ -12,30 +12,28 @@ import urllib.request
 import time
 
 # 配置文件路径（相对于项目根目录）
-CONFIG_FILE = 'db_config.json'
-API_KEY_FILE = 'qwen_apk_key.txt'
+CONFIG_FILE = 'config.json'
 OUTPUT_DIR = 'images'
 
 def load_config():
-    """加载数据库配置"""
+    """加载配置"""
     with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
         return json.load(f)
 
-def load_api_key():
+def load_api_key(config):
     """加载API密钥"""
-    with open(API_KEY_FILE, 'r', encoding='utf-8') as f:
-        return f.read().strip()
+    return config['api']['qwen_api_key']
 
 def connect_db(config):
     """连接数据库"""
     try:
         conn = pymysql.connect(
-            host=config['host'],
-            port=config['port'],
-            user=config['user'],
-            password=config['password'],
-            database=config['database'],
-            charset=config['charset']
+            host=config['database']['host'],
+            port=config['database']['port'],
+            user=config['database']['user'],
+            password=config['database']['password'],
+            database=config['database']['database'],
+            charset=config['database']['charset']
         )
         return conn
     except Exception as e:
@@ -269,28 +267,39 @@ def download_image(image_url, save_path):
         print(f"下载图片失败: {e}")
         return False
 
-def update_character_status(conn, character_id):
-    """更新角色生成状态"""
+def update_character_image(conn, character_id, image_path, angle_type):
+    """更新角色图片路径到数据库"""
     if not conn:
         return False
     
     cursor = conn.cursor()
     try:
-        cursor.execute("""
+        # 根据角度类型更新对应的字段
+        if angle_type == "标准脸1":
+            field = "face_image_front"
+        elif angle_type == "标准脸2":
+            field = "face_image_side"
+        elif angle_type == "标准脸3":
+            field = "face_image_half"
+        else:
+            return False
+        
+        cursor.execute(f"""
             UPDATE characters 
-            SET is_generated = TRUE 
+            SET {field} = %s, is_generated = TRUE 
             WHERE id = %s
-        """, (character_id,))
+        """, (image_path, character_id))
+        
         conn.commit()
         return True
     except Exception as e:
-        print(f"更新角色状态失败: {e}")
+        print(f"更新角色图片路径失败: {e}")
         conn.rollback()
         return False
     finally:
         cursor.close()
 
-def generate_character_image(character, novel_dir, api_key):
+def generate_character_image(conn, character, novel_dir, api_key):
     """生成单个角色的图片"""
     character_id, name, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _ = character
     
@@ -325,12 +334,18 @@ def generate_character_image(character, novel_dir, api_key):
             # 生成时间戳
             timestamp = str(int(time.time()))
             
-            # 保存图片（按照命名规范）
-            image_path = os.path.join(novel_dir, f"{name}_{face_name}_{timestamp}.png")
+            # 保存图片（使用时间戳命名，不包含中文）
+            image_path = os.path.join(novel_dir, f"r_{timestamp}.png")
             if download_image(image_url, image_path):
                 print(f"图片保存成功: {image_path}")
+                
+                # 更新数据库，存储本地图片路径
+                if update_character_image(conn, character_id, image_path, face_name):
+                    print(f"角色图片路径更新成功: {face_name}")
+                else:
+                    print(f"角色图片路径更新失败: {face_name}")
             else:
-                print(f"图片保存失败: {name}_{face_name}")
+                print(f"图片保存失败: {face_name}")
                 
             # 添加延迟，避免API速率限制
             time.sleep(2)
@@ -347,11 +362,15 @@ def main():
     
     # 加载配置
     config = load_config()
-    api_key = load_api_key()
+    api_key = load_api_key(config)
     
     # 连接数据库
     conn = connect_db(config)
     if not conn:
+        print("\n" + "="*60)
+        print("❌ 程序执行失败")
+        print("未完成：数据库连接失败")
+        print("="*60)
         return
     
     # 获取所有小说
@@ -359,9 +378,17 @@ def main():
     if not novels:
         print("没有找到小说")
         conn.close()
+        print("\n" + "="*60)
+        print("⚠️  程序执行完成")
+        print("已完成：连接数据库")
+        print("未完成：未找到小说")
+        print("="*60)
         return
     
     print(f"找到 {len(novels)} 本小说")
+    
+    total_characters = 0
+    processed_characters = 0
     
     # 处理每本小说
     for novel_id, novel_title in novels:
@@ -377,18 +404,28 @@ def main():
             print(f"没有找到未生成的角色")
             continue
         
+        total_characters += len(characters)
         print(f"找到 {len(characters)} 个未生成的角色")
         
         # 串行生成图片，避免API限流
         for character in characters:
-            character_id = generate_character_image(character, novel_dir, api_key)
-            if update_character_status(conn, character_id):
-                print(f"角色状态更新成功: ID={character_id}")
-            else:
-                print(f"角色状态更新失败: ID={character_id}")
+            character_id = generate_character_image(conn, character, novel_dir, api_key)
+            processed_characters += 1
     
     conn.close()
-    print("\n角色图片生成完成")
+    
+    print("\n" + "="*60)
+    print("✅ 程序执行完成")
+    print(f"总计: {len(novels)} 本小说")
+    print(f"角色总数: {total_characters} 个")
+    print(f"已处理: {processed_characters} 个")
+    
+    if total_characters == processed_characters:
+        print("\n已完成: 所有角色图片生成")
+    else:
+        print("\n部分角色图片生成可能失败")
+    
+    print("="*60)
 
 if __name__ == "__main__":
     main()

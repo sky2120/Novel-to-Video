@@ -1,8 +1,8 @@
 """
-程序名称：生成场景形象图片
-功能描述：读取数据库中的场景信息，调用wanx2.0-t2i-turbo生成场景形象图片，保存到对应的小说文件夹中
+程序名称：生成场景分段图片
+功能描述：读取数据库中的scene_segments表内容，调用wanx2.0-t2i-turbo生成场景图片，保存到指定目录并更新数据库
 作者：AI Assistant
-日期：2026-03-31
+日期：2026-04-01
 """
 import os
 import json
@@ -13,7 +13,7 @@ import time
 
 # 配置文件路径（相对于项目根目录）
 CONFIG_FILE = 'config.json'
-OUTPUT_DIR = 'images'
+OUTPUT_DIR = 'images/逆天改命法宝'
 
 def load_config():
     """加载配置"""
@@ -23,6 +23,10 @@ def load_config():
 def load_api_key(config):
     """加载API密钥"""
     return config['api']['qwen_api_key']
+
+def load_kimi_api_key(config):
+    """加载文本对话API密钥"""
+    return config['api']['kimi_api_key']
 
 def connect_db(config):
     """连接数据库"""
@@ -40,77 +44,65 @@ def connect_db(config):
         print(f"数据库连接失败: {e}")
         return None
 
-def get_all_novels(conn):
-    """获取所有小说信息"""
-    if not conn:
-        return []
-    
-    cursor = conn.cursor()
-    try:
-        cursor.execute("SELECT id, title FROM novels")
-        novels = cursor.fetchall()
-        return novels
-    except Exception as e:
-        print(f"获取小说信息失败: {e}")
-        return []
-    finally:
-        cursor.close()
-
-def get_scenes_by_novel(conn, novel_id):
-    """获取指定小说的场景信息"""
+def get_all_segments(conn):
+    """获取所有未生成图片的场景分段"""
     if not conn:
         return []
     
     cursor = conn.cursor()
     try:
         cursor.execute("""
-            SELECT id, name, description, scene_type, appearance_count, 
-                   visual_details, atmosphere, time_period, weather, importance
-            FROM scenes 
-            WHERE novel_id = %s AND is_generated = FALSE
-        """, (novel_id,))
-        scenes = cursor.fetchall()
-        return scenes
+            SELECT id, content, image_prompt FROM scene_segments 
+            WHERE image_url IS NULL OR image_url = ''
+            ORDER BY id ASC
+        """)
+        segments = cursor.fetchall()
+        return segments
     except Exception as e:
-        print(f"获取场景信息失败: {e}")
+        print(f"获取场景分段信息失败: {e}")
         return []
     finally:
         cursor.close()
 
-def generate_prompt(scene):
-    """生成场景描述提示词"""
-    (id, name, description, scene_type, appearance_count, 
-     visual_details, atmosphere, time_period, weather, importance) = scene
+def get_all_characters(conn):
+    """获取所有人物信息"""
+    if not conn:
+        return []
     
-    # 构建详细的场景描述
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            SELECT name, age, gender, personality, identity, hairstyle, face_shape, eyes, 
+                   eyebrows, nose_mouth, skin_color, height_atmosphere, body_type, temperament, 
+                   clothing_style, color_scheme, signature_decoration, art_style
+            FROM characters
+        """)
+        characters = cursor.fetchall()
+        return characters
+    except Exception as e:
+        print(f"获取人物信息失败: {e}")
+        return []
+    finally:
+        cursor.close()
+
+def extract_character_names(content, characters):
+    """从文本中提取出现的人物名字"""
+    character_names = []
+    for char_info in characters:
+        name = char_info[0]
+        if name and name in content:
+            character_names.append((name, char_info))
+    return character_names
+
+def generate_prompt(image_prompt):
+    """使用数据库中存储的提示词生成图片"""
     prompt_parts = []
     
-    # 基础信息
-    if name:
-        prompt_parts.append(f"场景名称：{name}")
-    if scene_type:
-        prompt_parts.append(f"场景类型：{scene_type}")
-    
-    # 视觉细节
-    if visual_details:
-        prompt_parts.append(f"视觉细节：{visual_details}")
-    
-    # 氛围描述
-    if atmosphere:
-        prompt_parts.append(f"氛围描述：{atmosphere}")
-    
-    # 时间和天气
-    if time_period:
-        prompt_parts.append(f"时间段：{time_period}")
-    if weather:
-        prompt_parts.append(f"天气情况：{weather}")
-    
-    # 其他描述
-    if description:
-        prompt_parts.append(f"详细描述：{description}")
+    # 使用数据库中存储的提示词
+    prompt_parts.append(image_prompt)
     
     # 添加通用描述
-    prompt_parts.append("场景插画，漫画风格，国漫风格，线条清晰，色彩鲜明，高清细节，高质量渲染，用装饰图案代替文字，招牌用装饰图案，菜单用装饰图案，无真实文字，无人，没有人物，固定场景")
+    prompt_parts.append("场景插画，漫画风格，国漫风格，线条清晰，色彩鲜明，高清细节，高质量渲染，用装饰图案代替文字，招牌用装饰图案，菜单用装饰图案，无真实文字，包含人物，固定场景")
     
     return "，".join(prompt_parts)
 
@@ -130,7 +122,7 @@ def create_image_task(api_key, prompt):
             "prompt": prompt
         },
         "parameters": {
-            "negative_prompt": "低分辨率，低画质，肢体畸形，手指畸形，画面过饱和，蜡像感，人脸无细节，过度光滑，画面具有AI感，构图混乱，真实文字，文字内容，文字符号，文字字母，文字数字，乱码文字，无法辨认的文字，错误的文字，模糊的文字，文字扭曲，文字变形，人物，人像，人脸，人影，人体，人物轮廓，人物形象",
+            "negative_prompt": "低分辨率，低画质，肢体畸形，手指畸形，画面过饱和，蜡像感，人脸无细节，过度光滑，画面具有AI感，构图混乱，真实文字，文字内容，文字符号，文字字母，文字数字，乱码文字，无法辨认的文字，错误的文字，模糊的文字，文字扭曲，文字变形",
             "size": "1024*1024",  # 1:1比例
         },
         "stream": True
@@ -225,43 +217,50 @@ def download_image(image_url, save_path):
         print(f"下载图片失败: {e}")
         return False
 
-def update_scene_image(conn, scene_id, image_path):
-    """更新场景图片路径到数据库"""
+def update_segment_image(conn, segment_id, image_path):
+    """更新场景分段图片路径到数据库"""
     if not conn:
         return False
     
     cursor = conn.cursor()
     try:
         cursor.execute("""
-            UPDATE scenes 
-            SET image_url = %s, is_generated = TRUE 
+            UPDATE scene_segments 
+            SET image_url = %s 
             WHERE id = %s
-        """, (image_path, scene_id))
+        """, (image_path, segment_id))
         
         conn.commit()
         return True
     except Exception as e:
-        print(f"更新场景图片路径失败: {e}")
+        print(f"更新场景分段图片路径失败: {e}")
         conn.rollback()
         return False
     finally:
         cursor.close()
 
-def generate_scene_image(conn, scene, novel_dir, api_key):
-    """生成单个场景的图片"""
-    scene_id, name, _, _, _, _, _, _, _, _ = scene
+def generate_segment_image(conn, segment, output_dir, api_key):
+    """生成单个场景分段的图片"""
+    segment_id, content, image_prompt = segment
     
-    print(f"\n正在生成场景: {name}")
+    print(f"\n正在生成场景分段: ID={segment_id}")
+    print(f"内容: {content[:100]}...")
+    
+    if not image_prompt:
+        print(f"错误: 场景分段 {segment_id} 没有提示词")
+        return False
+    
+    print(f"使用数据库中的提示词: {image_prompt[:100]}...")
     
     # 生成提示词
-    prompt = generate_prompt(scene)
-    print(f"提示词: {prompt}")
+    prompt = generate_prompt(image_prompt)
+    print(f"最终提示词: {prompt}")
     
     # 调用API生成图片
     result = call_image_api(api_key, prompt)
     if not result:
-        print(f"生成图片失败: {name}")
-        return scene_id
+        print(f"生成图片失败: ID={segment_id}")
+        return False
     
     # 提取图片URL
     try:
@@ -272,15 +271,16 @@ def generate_scene_image(conn, scene, novel_dir, api_key):
         timestamp = str(int(time.time()))
         
         # 保存图片（使用时间戳命名，不包含中文）
-        image_path = os.path.join(novel_dir, f"s_{timestamp}.png")
+        image_path = os.path.join(output_dir, f"seg_{timestamp}.png")
         if download_image(image_url, image_path):
             print(f"图片保存成功: {image_path}")
             
             # 更新数据库，存储本地图片路径
-            if update_scene_image(conn, scene_id, image_path):
-                print(f"场景图片路径更新成功")
+            if update_segment_image(conn, segment_id, image_path):
+                print(f"场景分段图片路径更新成功")
+                return True
             else:
-                print(f"场景图片路径更新失败")
+                print(f"场景分段图片路径更新失败")
         else:
             print(f"图片保存失败")
             
@@ -291,15 +291,18 @@ def generate_scene_image(conn, scene, novel_dir, api_key):
         print(f"处理图片结果失败: {e}")
         print(f"结果结构: {result}")
     
-    return scene_id
+    return False
 
 def main():
     """主函数"""
-    print("开始生成场景形象图片...")
+    print("开始生成场景分段图片...")
     
     # 加载配置
     config = load_config()
     api_key = load_api_key(config)
+    
+    # 创建输出目录
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
     
     # 连接数据库
     conn = connect_db(config)
@@ -310,57 +313,42 @@ def main():
         print("="*60)
         return
     
-    # 获取所有小说
-    novels = get_all_novels(conn)
-    if not novels:
-        print("没有找到小说")
+    # 获取所有未生成图片的场景分段
+    segments = get_all_segments(conn)
+    if not segments:
+        print("没有找到未生成图片的场景分段")
         conn.close()
         print("\n" + "="*60)
         print("⚠️  程序执行完成")
-        print("已完成：连接数据库")
-        print("未完成：未找到小说")
+        print("已完成：连接数据库、检查场景分段")
+        print("未完成：未找到未生成图片的场景分段")
         print("="*60)
         return
     
-    print(f"找到 {len(novels)} 本小说")
+    print(f"找到 {len(segments)} 个未生成图片的场景分段")
     
-    total_scenes = 0
-    processed_scenes = 0
+    success_count = 0
+    failed_count = 0
     
-    # 处理每本小说
-    for novel_id, novel_title in novels:
-        print(f"\n正在处理小说: {novel_title}")
-        
-        # 创建小说文件夹
-        novel_dir = os.path.join(OUTPUT_DIR, novel_title)
-        os.makedirs(novel_dir, exist_ok=True)
-        
-        # 获取场景信息
-        scenes = get_scenes_by_novel(conn, novel_id)
-        if not scenes:
-            print(f"没有找到未生成的场景")
-            continue
-        
-        total_scenes += len(scenes)
-        print(f"找到 {len(scenes)} 个未生成的场景")
-        
-        # 串行生成图片，避免API限流
-        for scene in scenes:
-            scene_id = generate_scene_image(conn, scene, novel_dir, api_key)
-            processed_scenes += 1
+    # 串行生成图片，避免API限流
+    for segment in segments:
+        if generate_segment_image(conn, segment, OUTPUT_DIR, api_key):
+            success_count += 1
+        else:
+            failed_count += 1
     
     conn.close()
     
     print("\n" + "="*60)
     print("✅ 程序执行完成")
-    print(f"总计: {len(novels)} 本小说")
-    print(f"场景总数: {total_scenes} 个")
-    print(f"已处理: {processed_scenes} 个")
+    print(f"总计: {len(segments)} 个场景分段")
+    print(f"成功: {success_count} 个")
+    print(f"失败: {failed_count} 个")
     
-    if total_scenes == processed_scenes:
-        print("\n已完成: 所有场景图片生成")
+    if success_count == len(segments):
+        print("\n已完成: 所有场景分段图片生成")
     else:
-        print("\n部分场景图片生成可能失败")
+        print("\n部分场景分段图片生成失败")
     
     print("="*60)
 
